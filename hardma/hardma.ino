@@ -63,6 +63,10 @@ void displaymenu(void) {
     display.println(" Menu option 1");
     display.setTextColor(SSD1306_WHITE);
     display.setTextSize(2);
+    display.println(" option 1");
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextSize(2);
+    display.println("-Nano");
   } else if (entered == 1) {
     display.clearDisplay();
     display.setTextSize(1);
@@ -71,6 +75,10 @@ void displaymenu(void) {
     display.println("Menu option 2");
     display.setTextColor(SSD1306_WHITE);
     display.setTextSize(2);
+    display.println(" option 2");
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextSize(2);
+    display.println("Nano");
   }
   else if (entered == 2) {
     display.clearDisplay();
@@ -80,6 +88,8 @@ void displaymenu(void) {
     display.println("Menu option 3");
     display.setTextColor(SSD1306_WHITE);
     display.setTextSize(2);
+
+    display.println("Nans");
   } else if (entered == 3) {
     display.clearDisplay();
     display.setTextSize(1);
@@ -89,6 +99,16 @@ void displaymenu(void) {
     display.setTextColor(SSD1306_WHITE);
     display.setTextSize(2);
 
+    display.println(" naa");
+  } else if (entered == 4) {
+    display.clearDisplay();
+    display.setTextSize(1);
+    display.setTextColor(SSD1306_WHITE);
+    display.setCursor(0, 0);
+    display.println("button");
+    display.setTextColor(SSD1306_WHITE);
+    display.setTextSize(2);
+    display.println("nono");
   }
 
   display.display();
@@ -108,7 +128,9 @@ void setup() {
   display.drawPixel(10, 10, SSD1306_WHITE);
   display.display();
   delay(2000); 
+
 }
+
 
 void loop() {
   displaymenu();
