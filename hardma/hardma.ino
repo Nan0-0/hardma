@@ -2,214 +2,131 @@
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
+
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define OLED_RESET 4
 #define SCREEN_ADDRESS 0x3C
+
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-// menus
-bool menuOpened = false;
-int menu = 0;
-int subMenu = 1;
-bool menuDepth = false;
-bool justOpened = false;
-#define MENUSIZE 8
-#define STRING_SIZE 11
+const int BUTTON_PIN_COUNT = 3;
+const int buttonPins[] = {5, 6, 7};
+const int soundPin = 4;
 
-const char mainMenu[MENUSIZE][8][STRING_SIZE] PROGMEM = {
-    {"food", "apple", "steak", "water", NULL},
-    {"game", NULL},
-    {"sleep", NULL},
-    {"clean", NULL},
-    {"doctor", NULL},
-    {"discipline", NULL},
-    {"stats", "hunger", "happiness", "health", "discipline", "weight", "age", NULL},
-    {"settings", "sound",
-     //"something",
-     NULL}};
+const int MENU_SIZE = 8;
+const int STRING_SIZE = 1;
 
-float hunger = 100;
-float happiness = 100;
-float health = 100;
-float discipline = 100;
-float weight = 1;
-float age = 0;
+const char mainMenu[MENU_SIZE][8][STRING_SIZE] PROGMEM = {
+  {"food","apple","steak","water",NULL},
+  {"game",NULL},
+  {"sleep",NULL},
+  {"clean",NULL},
+  {"doctor",NULL},
+  {"discipline",NULL},
+  {"stats","hunger","happiness","health","discipline","weight","age",NULL},
+  {"settings","sound",NULL}
+};
 
-const int button1Pin = 5;
-const int button2Pin = 6;
-const int button3Pin = 7;
+class Pet {
+public:
+  float hunger;
+  float happiness;
+  float health;
+  float discipline;
+  float weight;
+  float age;
+  bool sleeping;
+  bool dead;
+  bool soundEnabled;
+  int poops[3];
+
+  Pet() : hunger(100), happiness(100), health(100), discipline(100), weight(1), age(0), sleeping(false), dead(false), soundEnabled(true) {}
+
+  void updateStats() {
+    // update pet stats here
+  }
+
+  void drawStats() {
+    // draw pet stats here
+  }
+};
+
+Pet pet;
 
 void setup() {
-  pinMode(5, INPUT_PULLUP);
-  pinMode(7, INPUT_PULLUP);
-  pinMode(6, INPUT_PULLUP);
-
-  Serial.begin(9600);
-  if (!display.begin(SSD1306_SWITCHCAPVCC, SCREEN_ADDRESS)) {
-    Serial.println(F("SSD1306 allocation failed"));
-    for (;;);
+  for (int i = 0; i < BUTTON_PIN_COUNT; i++) {
+    pinMode(buttonPins[i], INPUT);
+    digitalWrite(buttonPins[i], HIGH);
   }
+  pinMode(soundPin, OUTPUT);
+
+  randomSeed(analogRead(0));
+
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
   display.clearDisplay();
+
+  // splash screen
+  display.setTextColor(WHITE);
+  display.print(F("nano presents"));
   display.display();
+  tone(sound, 500, 200);
+  delay(200);
+  tone(sound, 1000, 200);
+  delay(400);
+  tone(sound, 700, 200);
+  delay(200);
+  tone(sound, 1100, 200);
+  delay(2200);
+  display.clearDisplay();
 }
 
-void loop()
-{
-    int button1State = digitalRead(button1Pin);
-    int button2State = digitalRead(button2Pin);
-    int button3State = digitalRead(button3Pin);
+void loop() {
+  int buttonStates[BUTTON_PIN_COUNT];
+  for (int i = 0; i < BUTTON_PIN_COUNT; i++) {
+    buttonStates[i] = digitalRead(buttonPins[i]);
+  }
 
-    if (!menuOpened)
-    {
-        displayMenu();
-        handleMainMenuNavigation(button1State, button2State);
+  if (!pet.dead) {
+    pet.updateStats();
+    pet.drawStats();
+
+    // handle button presses
+    if (buttonStates[0] == LOW) {
+      // handle button 1 press
     }
-    else
-    {
-        updateStats();
-        displayStats();
-        handleSubMenuActions(button1State, button2State);
+    if (buttonStates[1] == LOW) {
+      // handle button 2 press
     }
-
-    delay(100); //  delay as needed
-}
-
-void handleMainMenuNavigation(int button1State, int button2State)
-{
-    static unsigned long lastButtonPress = 0;
-    unsigned long currentMillis = millis();
-
-    if (currentMillis - lastButtonPress >= 200) // Button debounce delay
-    {
-        if (button1State == LOW)
-        {
-            menu--;
-            if (menu < 0)
-                menu = MENUSIZE - 1;
-            lastButtonPress = currentMillis;
-        }
-        else if (button2State == LOW)
-        {
-            menu++;
-            if (menu >= MENUSIZE)
-                menu = 0;
-            lastButtonPress = currentMillis;
-        }
-
-        // Open sub-menu 
-        if ((const char *)pgm_read_word(&(mainMenu[menu][1])) != NULL)
-        {
-            menuOpened = true;
-            subMenu = 1;
-        }
+    if (buttonStates[2] == LOW) {
+      // handle button 3 press
     }
-}
-
-void handleSubMenuActions(int button1State, int button2State)
-{
-   
-}
-
-
-void displayMenu() {
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.setTextSize(1);
-    display.setTextColor(WHITE);
-
-    // Display menu items
-    for (int i = 0; i < 8; i++) {
-        if ((const char *)pgm_read_word(&(mainMenu[i][0])) != NULL) {
-            if (i == menu) {
-                display.setTextColor(WHITE, BLACK);  // Highlight current menu item
-            }
-            display.println((const char *)pgm_read_word(&(mainMenu[i][0])));
-            display.setTextColor(WHITE);  // Reset text color
-        }
-    }
-
-    // Display status bars or additional information
-    switch (menu) {
-        case 0:  // Food menu, display hunger bar
-            drawBar(hunger);
-            break;
-        case 6:  // Stats menu, display various stats
-            displayStats();
-            break;
-        // Add more cases for other menus as needed
-    }
-
-    display.display();
-}
-
-void updateStats()
-{
-    static unsigned long lastStatUpdate = 0;
-    unsigned long currentMillis = millis();
-    const unsigned long updateInterval = 1000; // Update every 1 second (adjust as needed)
-
-    if (currentMillis - lastStatUpdate >= updateInterval)
-    {
-        // Update stats at the specified interval
-        hunger -= 0.1;
-        happiness -= 0.05;
-        health -= 0.07;
-        discipline -= 0.03;
-        weight += 0.001;
-        age += 0.01;
-
-        // Ensure stats stay within bounds
-        hunger = constrain(hunger, 0.0, 100.0);
-        happiness = constrain(happiness, 0.0, 100.0);
-        health = constrain(health, 0.0, 100.0);
-        discipline = constrain(discipline, 0.0, 100.0);
-        weight = constrain(weight, 0.0, 10.0);
-
-        lastStatUpdate = currentMillis;
-    }
-}
-
-void displayStats()
-{
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.setTextSize(1);
-    display.setTextColor(WHITE);
-
-    display.print("Hunger: ");
-    display.println(hunger);
-    display.print("Happiness: ");
-    display.println(happiness);
-    display.print("Health: ");
-    display.println(health);
-    display.print("Discipline: ");
-    display.println(discipline);
-    display.print("Weight: ");
-    display.println(weight);
-    display.print("Age: ");
-    display.println(age);
-
-    display.display();
+  } else {
+    // pet is dead, display game over screen
+  }
 }
 
 void drawBar(float value) {
-    int barWidth = map(value, 0, 100, 0, 48);  // Map value to bar width
-    display.fillRect(72, 19, barWidth, 3, WHITE);  // Draw the bar
+  display.fillRect(72, 19, 48 * value / 100, 3, WHITE);
 }
 
-const char *getItem(int menu, int index) {
-    const char *menuItem = (const char *)pgm_read_word(&(mainMenu[menu][index]));
-    return menuItem;
-}
-
-/* int countPoops() {
-    int poopsCnt = 0;
-    return poopsCnt;
+int countPoops() {
+  int poopsCnt = 0;
+  for (int i = 0; i < 3; i++) {
+    if (pet.poops[i] > 0) {
+      ++poopsCnt;
+    }
+  }
+  return poopsCnt;
 }
 
 void resetPoops() {
+  for (int i = 0; i < 3; i++) {
+    pet.poops[i] = 0;
+  }
 }
-*/
+
+
+
 
 
