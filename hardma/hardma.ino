@@ -31,6 +31,15 @@ int soundPin = 4;
 bool menuOpened = false;
 int menuDepth = 0;
 int subMenu = 0;
+int menu = 0;
+int action = NULL;
+int setting = 0;
+bool justOpened = false;
+bool paused = false;
+bool gameOver = false;
+bool game = false;
+bool level = 0;
+bool soundEnabled = true;
 
 // Button pin constants
 const int menuButtonPin = 5;
@@ -55,7 +64,6 @@ float poopometer = 0;
 int poops[3] = {0, 0, 0};
 
 // Settings
-bool soundEnabled = true;
 
 // Menu constants
 const char mainMenu[MENUSIZE][8][STRING_SIZE] PROGMEM = {
@@ -68,10 +76,6 @@ const char mainMenu[MENUSIZE][8][STRING_SIZE] PROGMEM = {
   {"stats","hunger","happiness","health","discipline","weight","age",NULL},
   {"settings","sound",NULL}
 };
-
-// Menu state
-int menuSelectedIndex = 0;
-bool menuState = false;
 
 void setup() {
   // Initialize button pins as inputs with pull-up resistors
@@ -147,17 +151,19 @@ void loop() {
       display.setTextColor(WHITE);
     }
     char oneItem[STRING_SIZE];
-    memcpy_P(&oneItem, &mainMenu[menuSelectedIndex][0], sizeof oneItem);
+    memcpy_P(&oneItem, &mainMenu[menu][0], sizeof oneItem);
     display.println(oneItem);
     if (subMenu) {
       display.setTextColor(WHITE);
       display.setCursor(8, 16);
       char subItem[STRING_SIZE];
-      memcpy_P(&subItem, &mainMenu[menuSelectedIndex][subMenu], sizeof subItem);
+      memcpy_P(&subItem, &mainMenu[menu][subMenu], sizeof subItem);
       display.println(subItem);
     }
   }
 }
+
+
 
 void updatePetStats() {
   // Update hunger
@@ -220,66 +226,237 @@ void checkForNotifications() {
 }
 
 void handleButtonPresses() {
-  // Check for menu button press
-  if (menuButtonState == LOW) {
-    menuButtonPressed();
-  }
-
-  // Check for select button press
-  if (selectButtonState == LOW) {
-    selectButtonPressed();
-  }
-
-  // Check for back button press
-  if (backButtonState == LOW) {
-    backButtonPressed();
-  }
-}
-
-void menuButtonPressed() {
-  if (gameState == GAME_IDLE) {
-    menuSelectedIndex = 0;
-    menuOpened = true;
-  } else if (gameState == GAME_PLAYING) {
-    menuSelectedIndex = 0;
-    gameState = GAME_PAUSED;
-  } else if (gameState == GAME_PAUSED) {
-    menuSelectedIndex = 0;
-    gameState = GAME_PLAYING;
-  }
-}
-
-void selectButtonPressed() {
-  if (menuOpened && !gameState) {
-    subMenu++;
-    if (subMenu >= STRING_SIZE) {
-      subMenu = 0;
+  // Button 1 - MENU
+  if (menuButtonState == ACTIVATED) {
+    if (soundEnabled) {
+      tone(soundPin, 300, 80);
     }
-    if (!mainMenu[menuSelectedIndex][subMenu]) {
-      subMenu = 0;
-      menuDepth++;
-      if (menuDepth >= STRING_SIZE) {
-        menuDepth = 0;
+
+    if (!menuOpened) {
+      menuOpened = true;
+    } else {
+      if (menuDepth) {
+        if ((const char*)pgm_read_word(&(mainMenu[menu][subMenu + 1])) == NULL) {
+          subMenu = 1;
+        } else {
+          ++subMenu;
+        }
+        setting = 100 * (menu + 1) + subMenu;
+      } else {
+        if (menu == MENUSIZE - 1) {
+          menu = 0;
+        } else {
+          ++menu;
+        }
+
+        if ((const char*)pgm_read_word(&(mainMenu[menu][1])) != NULL) {
+          subMenu = 1;
+
+          justOpened = true;
+        }
+        setting = 100 * (menu + 1) + subMenu;
       }
     }
-  }
-}
 
-void backButtonPressed() {
-  if (menuOpened && !gameState) {
-    if (subMenu) {
-      subMenu--;
-    } else if (menuDepth) {
-      menuDepth--;
-      subMenu = mainMenu[menuSelectedIndex][menuDepth];
+    delay(60);
+  }
+
+  // Button 2 - SELECT
+  if (selectButtonState == ACTIVATED) {
+    if (game) {
+      if (!gameOver) {
+        paused = !paused;
+        if (soundEnabled) {
+          tone(soundPin, 600, 80);
+        }
+        delay(60);
+      }
+
     } else {
-      menuOpened = false;
-      subMenu = 0;
-      menuDepth = 0;
+      if (soundEnabled) {
+        tone(soundPin, 600, 80);
+      }
+
+      if (menuOpened) {
+
+
+        if (subMenu != 1 && (const char*)pgm_read_word(&(mainMenu[menu][1][0])) != NULL) {
+          action = 100 * (menu + 1) + subMenu;
+        }
+        if (subMenu == 1 && (const char*)pgm_read_word(&(mainMenu[menu][1][0])) == NULL) {
+          action = 100 * (menu + 1) + subMenu;
+        }
+        if (subMenu == 1 && (const char*)pgm_read_word(&(mainMenu[menu][1][0])) != NULL && menuDepth) {
+          action = 100 * (menu + 1) + subMenu;
+        }
+        if ((const char*)pgm_read_word(&(mainMenu[menu][1][0])) != NULL) {
+          setting = 100 * (menu + 1) + subMenu;
+          menuDepth = true;
+        }
+        if (action > 0) {
+        if ((action == 101 || action == 102 || action == 103) &&!sleeping && random(1, (11 - round(discipline / 10))) == 1) {
+
+
+          display.clearDisplay();
+          display.setCursor(0, 0);
+          display.println(F("Pet is eating..."));
+          display.display();
+          delay(1000);
+
+        // Display Settings
+        if (setting > 0 &&!game) {
+          display.clearDisplay();
+          display.setCursor(0, 0);
+          display.println(F("Settings"));
+          display.display();
+
+          switch (setting) {
+            case 201:
+              display.println(F("Increase happiness"));
+              break;
+            case 301:
+              display.println(F("Increase rest"));
+              break;
+            case 401:
+              display.println(F("Increase health"));
+              break;
+            case 501:
+              display.println(F("Increase discipline"));
+              break;
+            case 601:
+              display.println(F("Decrease hunger"));
+              break;
+            case 701:
+              display.println(F("Decrease happiness"));
+              break;
+            case 801:
+              display.println(F("Decrease health"));
+              break;
+            case 901:
+              display.println(F("Decrease discipline"));
+              break;
+            case 1001:
+              display.println(F("Set weight"));
+              break;
+            case 1101:
+              display.println(F("Set age"));
+              break;
+            case 1201:
+              display.println(F("Sound: ") + (soundEnabled? "on" : "off"));
+              break;
+          }
+
+          display.display();
+          delay(1000);
+
+          if (setting == 201) {
+            happiness += 1;
+          } else if (setting == 301) {
+            rest += 1;
+          } else if (setting == 401) {
+            health += 1;
+          } else if (setting == 501) {
+            discipline += 1;
+          } else if (setting == 601) {
+            hunger -= 1;
+          } else if (setting == 701) {
+            happiness -= 1;
+          } else if (setting == 801) {
+            health -= 1;
+          } else if (setting == 901) {
+            discipline -= 1;
+          } else if (setting == 1001) {
+            display.clearDisplay();
+            display.setCursor(0, 0);
+            display.println(F("Set weight"));
+            display.display();
+
+            while (!button1.isPressed() && !button2.isPressed()) {
+              display.setCursor(0, 10);
+              display.print(weight);
+              display.display();
+            }
+
+            if (button1.isPressed()) {
+              weight += 0.1;
+            } else if (button2.isPressed()) {
+              weight -= 0.1;
+            }
+
+            weight = max(0, weight);
+          } else if (setting == 1101) {
+            display.clearDisplay();
+            display.setCursor(0, 0);
+            display.println(F("Set age"));
+            display.display();
+
+            while (!button1.isPressed() && !button2.isPressed()) {
+              display.setCursor(0, 10);
+              display.print(age);
+              display.display();
+            }
+
+            if (button1.isPressed()) {
+              age += 1;
+            } else if (button2.isPressed()) {
+              age -= 1;
+            }
+
+            age = max(0, age);
+          } else if (setting == 1201) {
+            soundEnabled =!soundEnabled;
+          }
+
+          setting = 0;
+        }
+
+        action = 0;
+      }
+
+      } else {
+        action = NULL;
+
+        menuOpened = true;
+        menuDepth = true;
+        subMenu = 1;
+        menu = 6;
+        action = 701;
+        setting = 701;
+      }
+      justOpened = false;
+
+      delay(60);
     }
   }
-}
 
+  // Button 3 - BACK
+  if (backButtonState == ACTIVATED) {
+    if (soundEnabled) {
+      tone(soundPin, 1000, 80);
+    }
+
+    if (game || gameOver) {
+
+      game = false;
+      gameOver = false;
+      level = 0;
+      paused = false;
+    } else {
+      if (!menuDepth) {
+        menuOpened = false;
+        menu = 0;
+        setting = 0;
+      } else {
+        menuDepth = false;
+        setting = 100 * (menu + 1) + 1;
+      }
+      action = NULL;
+      subMenu = 1;
+    }
+
+    delay(60);
+  }
+}
 float countPoops() {
   float poopCount = 0;
 
@@ -306,3 +483,4 @@ void resetGame() {
   display.clearDisplay();
   display.display();
 }
+
