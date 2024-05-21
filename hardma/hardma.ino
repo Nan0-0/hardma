@@ -21,6 +21,20 @@ enum GameState {
   GAME_OVER
 };
 
+enum Actions {
+  ACTION_FOOD_APPLE,
+  ACTION_FOOD_STEAK,
+  ACTION_FOOD_WATER,
+  ACTION_GAME,
+  ACTION_SLEEP,
+  ACTION_CLEAN,
+  ACTION_DOCTOR,
+  ACTION_DISCIPLINE,
+  ACTION_STATS,
+  ACTION_SETTINGS_SOUND,
+  NUM_ACTIONS
+};
+
 // Global variables
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 GameState gameState = GAME_IDLE;
@@ -163,8 +177,6 @@ void loop() {
   }
 }
 
-
-
 void updatePetStats() {
   // Update hunger
   if (sleeping) {
@@ -279,7 +291,6 @@ void handleButtonPresses() {
 
       if (menuOpened) {
 
-
         if (subMenu != 1 && (const char*)pgm_read_word(&(mainMenu[menu][1][0])) != NULL) {
           action = 100 * (menu + 1) + subMenu;
         }
@@ -293,125 +304,6 @@ void handleButtonPresses() {
           setting = 100 * (menu + 1) + subMenu;
           menuDepth = true;
         }
-        if (action > 0) {
-        if ((action == 101 || action == 102 || action == 103) &&!sleeping && random(1, (11 - round(discipline / 10))) == 1) {
-
-
-          display.clearDisplay();
-          display.setCursor(0, 0);
-          display.println(F("Pet is eating..."));
-          display.display();
-          delay(1000);
-
-        // Display Settings
-        if (setting > 0 &&!game) {
-          display.clearDisplay();
-          display.setCursor(0, 0);
-          display.println(F("Settings"));
-          display.display();
-
-          switch (setting) {
-            case 201:
-              display.println(F("Increase happiness"));
-              break;
-            case 301:
-              display.println(F("Increase rest"));
-              break;
-            case 401:
-              display.println(F("Increase health"));
-              break;
-            case 501:
-              display.println(F("Increase discipline"));
-              break;
-            case 601:
-              display.println(F("Decrease hunger"));
-              break;
-            case 701:
-              display.println(F("Decrease happiness"));
-              break;
-            case 801:
-              display.println(F("Decrease health"));
-              break;
-            case 901:
-              display.println(F("Decrease discipline"));
-              break;
-            case 1001:
-              display.println(F("Set weight"));
-              break;
-            case 1101:
-              display.println(F("Set age"));
-              break;
-            case 1201:
-              display.println(F("Sound: ") + (soundEnabled? "on" : "off"));
-              break;
-          }
-
-          display.display();
-          delay(1000);
-
-          if (setting == 201) {
-            happiness += 1;
-          } else if (setting == 301) {
-            rest += 1;
-          } else if (setting == 401) {
-            health += 1;
-          } else if (setting == 501) {
-            discipline += 1;
-          } else if (setting == 601) {
-            hunger -= 1;
-          } else if (setting == 701) {
-            happiness -= 1;
-          } else if (setting == 801) {
-            health -= 1;
-          } else if (setting == 901) {
-            discipline -= 1;
-          } else if (setting == 1001) {
-            display.clearDisplay();
-            display.setCursor(0, 0);
-            display.println(F("Set weight"));
-            display.display();
-
-            while (!button1.isPressed() && !button2.isPressed()) {
-              display.setCursor(0, 10);
-              display.print(weight);
-              display.display();
-            }
-
-            if (button1.isPressed()) {
-              weight += 0.1;
-            } else if (button2.isPressed()) {
-              weight -= 0.1;
-            }
-
-            weight = max(0, weight);
-          } else if (setting == 1101) {
-            display.clearDisplay();
-            display.setCursor(0, 0);
-            display.println(F("Set age"));
-            display.display();
-
-            while (!button1.isPressed() && !button2.isPressed()) {
-              display.setCursor(0, 10);
-              display.print(age);
-              display.display();
-            }
-
-            if (button1.isPressed()) {
-              age += 1;
-            } else if (button2.isPressed()) {
-              age -= 1;
-            }
-
-            age = max(0, age);
-          } else if (setting == 1201) {
-            soundEnabled =!soundEnabled;
-          }
-
-          setting = 0;
-        }
-
-        action = 0;
-      }
 
       } else {
         action = NULL;
@@ -455,6 +347,32 @@ void handleButtonPresses() {
     }
 
     delay(60);
+  }
+}
+void handleAction(int action) {
+  switch (action) {
+    case ACTION_FOOD_APPLE:
+      break;
+    case ACTION_FOOD_STEAK:
+      break;
+    case ACTION_FOOD_WATER:
+      break;
+    case ACTION_GAME:
+      break;
+    case ACTION_SLEEP:
+      break;
+    case ACTION_CLEAN:
+      break;
+    case ACTION_DOCTOR:
+      break;
+    case ACTION_DISCIPLINE:
+      break;
+    case ACTION_STATS:
+      break;
+    case ACTION_SETTINGS_SOUND:
+      break;
+    default:
+      break;
   }
 }
 float countPoops() {
